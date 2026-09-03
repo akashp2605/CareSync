@@ -1,6 +1,8 @@
-import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import SplashScreen from './components/common/SplashScreen';
+import RoleSelection from './pages/Login/RoleSelection';
 import Login from './pages/Login/Login';
 import MainLayout from './components/layout/MainLayout';
 import Dashboard from './pages/Dashboard/Dashboard';
@@ -15,11 +17,27 @@ import PatientDashboard from './pages/PatientDashboard/PatientDashboard';
 import ProtectedRoute from './components/common/ProtectedRoute';
 
 function App() {
+  const [showSplash, setShowSplash] = useState(true);
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const handleSplashFinish = () => {
+    setShowSplash(false);
+    // When initially opened or refreshed on public/login paths, redirect to role selection
+    if (location.pathname === '/' || location.pathname.startsWith('/login')) {
+      navigate('/login', { replace: true });
+    }
+  };
+
   return (
     <AuthProvider>
+      {/* Splash screen displayed on initial open / page refresh */}
+      {showSplash && <SplashScreen onFinish={handleSplashFinish} />}
+
       <Routes>
-        {/* Public Route */}
-        <Route path="/login" element={<Login />} />
+        {/* Public Routes: Role selection and dedicated role login */}
+        <Route path="/login" element={<RoleSelection />} />
+        <Route path="/login/:role" element={<Login />} />
 
         {/* Admin Routes */}
         <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
@@ -48,7 +66,7 @@ function App() {
           </Route>
         </Route>
 
-        {/* Default redirect to login */}
+        {/* Default redirect to login role selection */}
         <Route path="/" element={<Navigate to="/login" replace />} />
         
         {/* Fallback route */}

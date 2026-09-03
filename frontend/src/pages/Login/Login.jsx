@@ -1,18 +1,71 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../api/axios';
 import Button from '../../components/common/Button';
-import { Stethoscope, Users, ShieldAlert, HeartPulse } from 'lucide-react';
+import { Stethoscope, Users, ShieldCheck, ArrowLeft, Eye, EyeOff } from 'lucide-react';
+import caresyncLogo from '../../assets/caresync.png';
+
+const ROLE_INFO = {
+  ADMIN: {
+    title: 'Admin Login',
+    badgeText: 'Operations & Administration',
+    badgeClass: 'login-role-badge-doctor',
+    icon: ShieldCheck,
+    desc: 'Manage hospital operations, departments, and users',
+    btnColor: '#0d9488'
+  },
+  DOCTOR: {
+    title: 'Doctor Login',
+    badgeText: 'Clinical & Patient Care',
+    badgeClass: 'login-role-badge-doctor',
+    icon: Stethoscope,
+    desc: 'Access patients, manage prescriptions, and medical records',
+    btnColor: '#0d9488'
+  },
+  PATIENT: {
+    title: 'Patient Login',
+    badgeText: 'Personal Health Records',
+    badgeClass: 'login-role-badge-doctor',
+    icon: Users,
+    desc: 'Manage your appointments and personal health information',
+    btnColor: '#0d9488'
+  }
+};
 
 const Login = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
-  const [role, setRole] = useState('ADMIN'); // ADMIN, DOCTOR, PATIENT
+  const { role: roleParam } = useParams();
+
+  // Normalize role from URL param (e.g. /login/admin -> ADMIN)
+  const getInitialRole = () => {
+    if (roleParam) {
+      const upper = roleParam.toUpperCase();
+      if (upper === 'ADMIN' || upper === 'DOCTOR' || upper === 'PATIENT') {
+        return upper;
+      }
+    }
+    return 'ADMIN';
+  };
+
+  const [role, setRole] = useState(getInitialRole);
+
+  // Sync role if URL param changes
+  useEffect(() => {
+    if (roleParam) {
+      const upper = roleParam.toUpperCase();
+      if (upper === 'ADMIN' || upper === 'DOCTOR' || upper === 'PATIENT') {
+        setRole(upper);
+        setErrorMsg('');
+      }
+    }
+  }, [roleParam]);
 
   // Admin inputs
   const [adminUsername, setAdminUsername] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   // Doctor/Patient inputs
   const [nameInput, setNameInput] = useState('');
@@ -21,15 +74,6 @@ const Login = () => {
   // Status states
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
-
-  const handleRoleChange = (selectedRole) => {
-    setRole(selectedRole);
-    setErrorMsg('');
-    setNameInput('');
-    setPhoneInput('');
-    setAdminUsername('');
-    setAdminPassword('');
-  };
 
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
@@ -51,7 +95,7 @@ const Login = () => {
 
         login('ADMIN', response.data);
         navigate('/dashboard');
-      } 
+      }
       else if (role === 'DOCTOR') {
         if (!nameInput.trim() || !phoneInput.trim()) {
           setErrorMsg('Doctor name and mobile number are required.');
@@ -66,7 +110,7 @@ const Login = () => {
 
         login('DOCTOR', response.data);
         navigate('/doctor/dashboard');
-      } 
+      }
       else if (role === 'PATIENT') {
         if (!nameInput.trim() || !phoneInput.trim()) {
           setErrorMsg('Patient name and mobile number are required.');
@@ -93,80 +137,81 @@ const Login = () => {
     }
   };
 
+  const activeRoleInfo = ROLE_INFO[role] || ROLE_INFO.ADMIN;
+  const ActiveRoleIcon = activeRoleInfo.icon;
+
   return (
     <div style={{
       minHeight: '100vh',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: 'var(--background)',
-      padding: '20px'
+      backgroundColor: '#f8fafc',
+      padding: '24px 20px',
+      position: 'relative',
+      overflow: 'hidden'
     }}>
+      {/* Background ambient medical glows */}
+      <div className="ref-role-bg-circle-1" />
+      <div className="ref-role-bg-circle-2" />
+
       <div className="card" style={{
-        maxWidth: '460px',
+        maxWidth: '470px',
         width: '100%',
-        padding: '40px 32px',
-        boxShadow: 'var(--shadow-lg)'
+        padding: '36px 32px',
+        boxShadow: 'var(--shadow-lg)',
+        borderRadius: '24px',
+        position: 'relative',
+        zIndex: 1,
+        border: '1px solid #e2e8f0',
+        backgroundColor: '#ffffff'
       }}>
+        {/* Navigation back to role selection */}
+        <button
+          type="button"
+          onClick={() => navigate('/login')}
+          className="login-header-back-btn"
+          aria-label="Change role"
+        >
+          <ArrowLeft size={16} />
+          <span>Change role</span>
+        </button>
+
         {/* Header */}
-        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '28px' }}>
           <div style={{
             display: 'inline-flex',
             alignItems: 'center',
             justifyContent: 'center',
-            width: '60px',
-            height: '60px',
-            borderRadius: '16px',
-            backgroundColor: 'var(--primary-light)',
-            color: 'var(--primary)',
-            marginBottom: '16px'
+            width: '64px',
+            height: '64px',
+            borderRadius: '18px',
+            backgroundColor: '#ffffff',
+            border: '1px solid #e2e8f0',
+            boxShadow: '0 4px 12px rgba(252, 251, 251, 1)',
+            marginBottom: '14px',
+            padding: '8px'
           }}>
-            <HeartPulse size={36} strokeWidth={2.5} />
+            <img
+              src={caresyncLogo}
+              alt="CareSync"
+              style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+            />
           </div>
-          <h2 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text-primary)' }}>CareSync Portal</h2>
-          <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-            Hospital Management & Medical Records System
-          </p>
-        </div>
 
-        {/* Role Tabs */}
-        <div style={{
-          display: 'flex',
-          backgroundColor: 'var(--secondary-light)',
-          padding: '4px',
-          borderRadius: 'var(--radius-md)',
-          marginBottom: '24px'
-        }}>
-          {[
-            { id: 'ADMIN', label: 'Admin', icon: ShieldAlert },
-            { id: 'DOCTOR', label: 'Doctor', icon: Stethoscope },
-            { id: 'PATIENT', label: 'Patient', icon: Users }
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => handleRoleChange(tab.id)}
-              style={{
-                flex: 1,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '6px',
-                padding: '10px 0',
-                border: 'none',
-                background: role === tab.id ? '#ffffff' : 'transparent',
-                color: role === tab.id ? 'var(--primary)' : 'var(--text-secondary)',
-                borderRadius: '8px',
-                fontSize: '13px',
-                fontWeight: role === tab.id ? 600 : 500,
-                cursor: 'pointer',
-                boxShadow: role === tab.id ? 'var(--shadow-sm)' : 'none',
-                transition: 'all var(--transition-fast)'
-              }}
-            >
-              <tab.icon size={15} />
-              <span>{tab.label}</span>
-            </button>
-          ))}
+          <div>
+            <div className={`login-role-badge-container ${activeRoleInfo.badgeClass}`}>
+              <ActiveRoleIcon size={14} />
+              <span>{activeRoleInfo.badgeText}</span>
+            </div>
+          </div>
+
+          <h2 style={{ fontSize: '24px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.3px' }}>
+            {activeRoleInfo.title}
+          </h2>
+          <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px', maxWidth: '360px', marginInline: 'auto' }}>
+            {activeRoleInfo.desc}
+          </p>
         </div>
 
         {/* Error Message */}
@@ -185,12 +230,12 @@ const Login = () => {
           </div>
         )}
 
-        {/* Form */}
+        {/* Dedicated Role Form - No confusing tab switcher */}
         <form onSubmit={handleLoginSubmit} noValidate>
           {role === 'ADMIN' ? (
             <>
               <div className="form-group">
-                <label className="form-label">Username</label>
+                <label className="form-label">Admin Username</label>
                 <input
                   type="text"
                   className="form-input"
@@ -201,14 +246,25 @@ const Login = () => {
                 />
               </div>
               <div className="form-group" style={{ marginBottom: '24px' }}>
-                <label className="form-label">Password</label>
-                <input
-                  type="password"
-                  className="form-input"
-                  value={adminPassword}
-                  onChange={(e) => setAdminPassword(e.target.value)}
-                  placeholder="Enter password"
-                />
+                <label className="form-label">Admin Password</label>
+                <div className="password-input-wrapper">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    className="form-input"
+                    value={adminPassword}
+                    onChange={(e) => setAdminPassword(e.target.value)}
+                    placeholder="Enter password"
+                  />
+                  <button
+                    type="button"
+                    className="password-toggle-btn"
+                    onClick={() => setShowPassword(!showPassword)}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    title={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? <Eye size={18} /> : <EyeOff size={18} />}
+                  </button>
+                </div>
               </div>
             </>
           ) : (
@@ -243,9 +299,17 @@ const Login = () => {
             type="submit"
             variant="primary"
             loading={loading}
-            style={{ width: '100%', padding: '12px', fontSize: '15px', fontWeight: 600 }}
+            style={{
+              width: '100%',
+              padding: '13px',
+              fontSize: '15px',
+              fontWeight: 600,
+              backgroundColor: activeRoleInfo.btnColor,
+              borderColor: activeRoleInfo.btnColor,
+              borderRadius: '12px'
+            }}
           >
-            Access Dashboard
+            {role === 'ADMIN' ? 'Sign in as Admin' : role === 'DOCTOR' ? 'Sign in as Doctor' : 'Sign in as Patient'}
           </Button>
         </form>
       </div>
