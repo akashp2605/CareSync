@@ -1,7 +1,8 @@
 import axios from 'axios';
 
 // Get base URL from environment variables, fallback to localhost:8080
-const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+const rawBaseURL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+const baseURL = rawBaseURL.replace(/\/+$/, '');
 
 const api = axios.create({
   baseURL,
