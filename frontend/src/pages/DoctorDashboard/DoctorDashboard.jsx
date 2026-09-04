@@ -7,10 +7,10 @@ import ErrorState from '../../components/common/ErrorState';
 import EmptyState from '../../components/common/EmptyState';
 import Modal from '../../components/common/Modal';
 import Button from '../../components/common/Button';
-import { Stethoscope, Calendar, User, FileText, Phone, Building } from 'lucide-react';
+import { Stethoscope, Calendar, User, FileText, Phone, Building, RefreshCw } from 'lucide-react';
 
 const DoctorDashboard = () => {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
 
   const formatDocName = (name) => {
     if (!name) return '';
@@ -21,15 +21,21 @@ const DoctorDashboard = () => {
   const [doctorProfile, setDoctorProfile] = useState(null);
   const [myAppointments, setMyAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
 
   // Modal States
   const [selectedApp, setSelectedApp] = useState(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
 
-  const loadDoctorData = async () => {
-    setLoading(true);
+  const loadDoctorData = async (isManual = false) => {
+    if (isManual) {
+      setRefreshing(true);
+    } else {
+      setLoading(true);
+    }
     setError(null);
+
     try {
       // Fetch profile & appointments in parallel
       const [profileData, allAppointments] = await Promise.all([
@@ -48,15 +54,18 @@ const DoctorDashboard = () => {
       filtered.sort((a, b) => new Date(b.appointmentDate) - new Date(a.appointmentDate));
       setMyAppointments(filtered);
     } catch (err) {
-      setError('Failed to fetch doctor dashboard records.');
+      setError(err.customMessage || 'Failed to fetch doctor dashboard records from server.');
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
   useEffect(() => {
-    loadDoctorData();
-  }, [user.doctorId]);
+    if (user?.doctorId) {
+      loadDoctorData();
+    }
+  }, [user?.doctorId]);
 
   const handleOpenDetailModal = (app) => {
     setSelectedApp(app);
@@ -66,7 +75,7 @@ const DoctorDashboard = () => {
   if (loading) {
     return (
       <div className="page-container">
-        <Loader text="Loading your dashboard clinical data..." />
+        <Loader type="profile" />
       </div>
     );
   }
@@ -74,24 +83,70 @@ const DoctorDashboard = () => {
   if (error) {
     return (
       <div className="page-container">
-        <ErrorState title="System Sync Error" message={error} onRetry={loadDoctorData} />
+        <ErrorState title="System Sync Error" message={error} onRetry={() => loadDoctorData(false)} />
       </div>
     );
   }
 
+  // Calculate doctor initials
+  const rawName = doctorProfile?.doctorName || user?.doctorName || 'Doctor';
+  const cleanName = rawName.toLowerCase().startsWith('dr. ') ? rawName.substring(4) : rawName;
+  const initial = cleanName.trim().charAt(0) || 'D';
+
+  // Stats calculation
+  const todayStr = new Date().toISOString().split('T')[0];
+  const todayCount = myAppointments.filter(a => a.appointmentDate === todayStr).length;
+  const upcomingCount = myAppointments.filter(a => a.appointmentDate >= todayStr).length;
+
   return (
     <div className="page-container animate-fade-in">
       {/* Welcome Banner */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        flexWrap: 'wrap',
-        gap: '16px'
-      }}>
+      <div className="page-header-section">
         <div>
           <h1 className="page-title">Doctor Dashboard</h1>
           <p className="page-subtitle">Welcome back, {formatDocName(doctorProfile?.doctorName || user.doctorName)}. Here is your clinical schedule.</p>
+        </div>
+        <Button
+          variant="secondary"
+          icon={RefreshCw}
+          loading={refreshing}
+          onClick={() => loadDoctorData(true)}
+          title="Refresh schedule"
+        >
+          {refreshing ? 'Syncing...' : 'Refresh'}
+        </Button>
+      </div>
+
+      {/* Quick clinical stats */}
+      <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)', marginBottom: '20px' }}>
+        <div className="stat-card">
+          <div className="stat-info">
+            <span className="stat-label">Total Assigned</span>
+            <span className="stat-value">{myAppointments.length}</span>
+          </div>
+          <div className="stat-icon-wrapper blue">
+            <Calendar size={22} />
+          </div>
+        </div>
+
+        <div className="stat-card">
+          <div className="stat-info">
+            <span className="stat-label">Today's Schedule</span>
+            <span className="stat-value">{todayCount}</span>
+          </div>
+          <div className="stat-icon-wrapper emerald">
+            <Calendar size={22} />
+          </div>
+        </div>
+
+        <div className="stat-card">
+          <div className="stat-info">
+            <span className="stat-label">Upcoming / Active</span>
+            <span className="stat-value">{upcomingCount}</span>
+          </div>
+          <div className="stat-icon-wrapper indigo">
+            <Stethoscope size={22} />
+          </div>
         </div>
       </div>
 
@@ -106,10 +161,10 @@ const DoctorDashboard = () => {
           
           <div style={{ textAlign: 'center', padding: '16px 0', borderBottom: '1px solid var(--border)' }}>
             <div style={{
-              width: '72px', height: '72px', borderRadius: '50%', backgroundColor: 'var(--primary-light)', color: 'var(--primary)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px', fontSize: '28px', fontWeight: 'bold'
+              width: '68px', height: '68px', borderRadius: '50%', backgroundColor: 'var(--primary-light)', color: 'var(--primary)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px', fontSize: '26px', fontWeight: 'bold'
             }}>
-              {doctorProfile?.doctorName?.charAt(0) || 'D'}
+              {initial}
             </div>
             <h4 style={{ fontSize: '18px', fontWeight: 700 }}>{formatDocName(doctorProfile?.doctorName)}</h4>
             <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{doctorProfile?.specialization}</span>
@@ -133,8 +188,8 @@ const DoctorDashboard = () => {
             </div>
 
             <div style={{ borderTop: '1px solid var(--border)', paddingTop: '14px', marginTop: '6px' }}>
-              <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '6px' }}>Qualifications</div>
-              <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '8px' }}>Qualifications</div>
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                 {doctorProfile?.speciality && doctorProfile.speciality.length > 0 ? (
                   doctorProfile.speciality.map(s => (
                     <span key={s.specialityId} className="badge badge-indigo">
@@ -216,7 +271,7 @@ const DoctorDashboard = () => {
       <Modal
         isOpen={isDetailOpen}
         onClose={() => setIsDetailOpen(false)}
-        title="Consultation Case Inspector"
+        title="Consultation Case Details"
         size="md"
       >
         {selectedApp && (
@@ -284,7 +339,7 @@ const DoctorDashboard = () => {
 
             <div className="form-actions" style={{ width: '100%', marginTop: '24px' }}>
               <Button variant="secondary" onClick={() => setIsDetailOpen(false)}>
-                Close Inspector
+                Close
               </Button>
             </div>
           </div>

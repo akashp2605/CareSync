@@ -38,6 +38,7 @@ const Header = ({ setMobileOpen }) => {
     }
     return parts[0][0]?.toUpperCase() || '';
   };
+
   const pathnames = location.pathname.split('/').filter((x) => x);
 
   // Format today's date: "Thursday, Aug 27, 2026"
@@ -48,6 +49,10 @@ const Header = ({ setMobileOpen }) => {
 
   // Map path slugs to user-friendly titles
   const routeNameMap = {
+    dashboard: 'Dashboard',
+    admin: 'Admin',
+    doctor: 'Doctor',
+    patient: 'Patient',
     patients: 'Patients',
     doctors: 'Doctors',
     departments: 'Departments',
@@ -58,6 +63,12 @@ const Header = ({ setMobileOpen }) => {
     edit: 'Edit'
   };
 
+  const homeRoute = user?.role === 'DOCTOR'
+    ? '/doctor/dashboard'
+    : user?.role === 'PATIENT'
+    ? '/patient/dashboard'
+    : '/dashboard';
+
   return (
     <header className="header">
       <div className="header-left">
@@ -65,6 +76,7 @@ const Header = ({ setMobileOpen }) => {
           className="mobile-menu-toggle" 
           onClick={() => setMobileOpen(true)}
           title="Open Menu"
+          aria-label="Open navigation menu"
         >
           <Menu size={24} />
         </button>
@@ -72,7 +84,7 @@ const Header = ({ setMobileOpen }) => {
         {/* Dynamic Breadcrumbs */}
         <nav className="breadcrumb-container" aria-label="Breadcrumb">
           <div className="breadcrumb-item">
-            <Link to="/" className="breadcrumb-link">Home</Link>
+            <Link to={homeRoute} className="breadcrumb-link">Home</Link>
           </div>
           {pathnames.map((value, index) => {
             const last = index === pathnames.length - 1;

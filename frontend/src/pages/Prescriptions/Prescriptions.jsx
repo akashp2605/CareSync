@@ -170,9 +170,20 @@ const Prescriptions = () => {
           <h1 className="page-title">Prescription Management</h1>
           <p className="page-subtitle">Configure therapeutic medicines, formulas, and dosage plans.</p>
         </div>
-        <Button variant="primary" icon={Plus} onClick={handleOpenAddModal}>
-          Add Prescription
-        </Button>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <Button 
+            variant="secondary" 
+            icon={RefreshCw} 
+            onClick={loadPrescriptions} 
+            loading={loading} 
+            title="Refresh prescriptions"
+          >
+            Refresh
+          </Button>
+          <Button variant="primary" icon={Plus} onClick={handleOpenAddModal}>
+            Add Prescription
+          </Button>
+        </div>
       </div>
 
       {loading ? (

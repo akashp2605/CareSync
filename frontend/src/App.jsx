@@ -17,14 +17,21 @@ import PatientDashboard from './pages/PatientDashboard/PatientDashboard';
 import ProtectedRoute from './components/common/ProtectedRoute';
 
 function App() {
-  const [showSplash, setShowSplash] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Show splash screen only on initial application entry on root/login,
+  // avoiding flashing on every dashboard or CRUD page refresh
+  const [showSplash, setShowSplash] = useState(() => {
+    const splashSeen = sessionStorage.getItem('caresync_splash_seen');
+    const isEntryRoute = location.pathname === '/' || location.pathname === '/login';
+    return !splashSeen && isEntryRoute;
+  });
+
   const handleSplashFinish = () => {
     setShowSplash(false);
-    // When initially opened or refreshed on public/login paths, redirect to role selection
-    if (location.pathname === '/' || location.pathname.startsWith('/login')) {
+    sessionStorage.setItem('caresync_splash_seen', 'true');
+    if (location.pathname === '/') {
       navigate('/login', { replace: true });
     }
   };

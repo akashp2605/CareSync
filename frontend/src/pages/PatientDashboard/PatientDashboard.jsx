@@ -7,24 +7,30 @@ import ErrorState from '../../components/common/ErrorState';
 import EmptyState from '../../components/common/EmptyState';
 import Modal from '../../components/common/Modal';
 import Button from '../../components/common/Button';
-import { User, Calendar, Stethoscope, FileText, Phone, Mail } from 'lucide-react';
+import { User, Calendar, Stethoscope, FileText, Phone, Mail, RefreshCw } from 'lucide-react';
 
 const PatientDashboard = () => {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   
   // Data States
   const [patientProfile, setPatientProfile] = useState(null);
   const [myAppointments, setMyAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
 
   // Modal States
   const [selectedApp, setSelectedApp] = useState(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
 
-  const loadPatientData = async () => {
-    setLoading(true);
+  const loadPatientData = async (isManual = false) => {
+    if (isManual) {
+      setRefreshing(true);
+    } else {
+      setLoading(true);
+    }
     setError(null);
+
     try {
       // Fetch profile & appointments in parallel
       const [profileData, allAppointments] = await Promise.all([
@@ -43,15 +49,18 @@ const PatientDashboard = () => {
       filtered.sort((a, b) => new Date(b.appointmentDate) - new Date(a.appointmentDate));
       setMyAppointments(filtered);
     } catch (err) {
-      setError('Failed to fetch patient dashboard records.');
+      setError(err.customMessage || 'Failed to fetch patient dashboard records from server.');
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
   useEffect(() => {
-    loadPatientData();
-  }, [user.patientId]);
+    if (user?.patientId) {
+      loadPatientData();
+    }
+  }, [user?.patientId]);
 
   const handleOpenDetailModal = (app) => {
     setSelectedApp(app);
@@ -61,7 +70,7 @@ const PatientDashboard = () => {
   if (loading) {
     return (
       <div className="page-container">
-        <Loader text="Loading your medical records..." />
+        <Loader type="profile" />
       </div>
     );
   }
@@ -69,24 +78,65 @@ const PatientDashboard = () => {
   if (error) {
     return (
       <div className="page-container">
-        <ErrorState title="System Sync Error" message={error} onRetry={loadPatientData} />
+        <ErrorState title="System Sync Error" message={error} onRetry={() => loadPatientData(false)} />
       </div>
     );
   }
 
+  const initial = patientProfile?.patientName?.trim().charAt(0) || user?.patientName?.trim().charAt(0) || 'P';
+  const todayStr = new Date().toISOString().split('T')[0];
+  const upcomingCount = myAppointments.filter(a => a.appointmentDate >= todayStr).length;
+  const prescriptionsCount = myAppointments.filter(a => a.prescription).length;
+
   return (
     <div className="page-container animate-fade-in">
       {/* Welcome Banner */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        flexWrap: 'wrap',
-        gap: '16px'
-      }}>
+      <div className="page-header-section">
         <div>
           <h1 className="page-title">Patient Dashboard</h1>
           <p className="page-subtitle">Welcome back, {patientProfile?.patientName || user.patientName}. Here is your medical history.</p>
+        </div>
+        <Button
+          variant="secondary"
+          icon={RefreshCw}
+          loading={refreshing}
+          onClick={() => loadPatientData(true)}
+          title="Refresh health records"
+        >
+          {refreshing ? 'Syncing...' : 'Refresh'}
+        </Button>
+      </div>
+
+      {/* Health metrics overview */}
+      <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)', marginBottom: '20px' }}>
+        <div className="stat-card">
+          <div className="stat-info">
+            <span className="stat-label">Total Visits</span>
+            <span className="stat-value">{myAppointments.length}</span>
+          </div>
+          <div className="stat-icon-wrapper emerald">
+            <Calendar size={22} />
+          </div>
+        </div>
+
+        <div className="stat-card">
+          <div className="stat-info">
+            <span className="stat-label">Upcoming Visits</span>
+            <span className="stat-value">{upcomingCount}</span>
+          </div>
+          <div className="stat-icon-wrapper blue">
+            <Calendar size={22} />
+          </div>
+        </div>
+
+        <div className="stat-card">
+          <div className="stat-info">
+            <span className="stat-label">Prescriptions</span>
+            <span className="stat-value">{prescriptionsCount}</span>
+          </div>
+          <div className="stat-icon-wrapper purple">
+            <FileText size={22} />
+          </div>
         </div>
       </div>
 
@@ -96,49 +146,41 @@ const PatientDashboard = () => {
         <div className="card" style={{ height: 'fit-content' }}>
           <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <User size={18} style={{ color: 'var(--primary)' }} />
-            Patient Profile
+            Personal Profile
           </h3>
           
           <div style={{ textAlign: 'center', padding: '16px 0', borderBottom: '1px solid var(--border)' }}>
             <div style={{
-              width: '72px', height: '72px', borderRadius: '50%', backgroundColor: 'var(--primary-light)', color: 'var(--primary)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px', fontSize: '28px', fontWeight: 'bold'
+              width: '68px', height: '68px', borderRadius: '50%', backgroundColor: 'var(--primary-light)', color: 'var(--primary)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px', fontSize: '26px', fontWeight: 'bold'
             }}>
-              {patientProfile?.patientName?.charAt(0) || 'P'}
+              {initial}
             </div>
             <h4 style={{ fontSize: '18px', fontWeight: 700 }}>{patientProfile?.patientName}</h4>
-            <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Patient Record</span>
+            <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Registered Patient #{patientProfile?.patientId}</span>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '20px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '14px' }}>
               <Phone size={16} style={{ color: 'var(--text-muted)' }} />
               <div>
-                <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Mobile</div>
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Mobile Number</div>
                 <div style={{ fontWeight: 600 }}>{patientProfile?.phone || 'N/A'}</div>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '14px' }}>
-              <Mail size={16} style={{ color: 'var(--text-muted)' }} />
-              <div>
-                <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Email</div>
-                <div style={{ fontWeight: 600 }}>{patientProfile?.email || 'N/A'}</div>
               </div>
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '14px' }}>
               <User size={16} style={{ color: 'var(--text-muted)' }} />
               <div>
-                <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Age</div>
-                <div style={{ fontWeight: 600 }}>{patientProfile?.age || 'N/A'}</div>
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Recorded Age</div>
+                <div style={{ fontWeight: 600 }}>{patientProfile?.age ? `${patientProfile.age} Years` : 'N/A'}</div>
               </div>
             </div>
 
             <div style={{ borderTop: '1px solid var(--border)', paddingTop: '14px', marginTop: '6px' }}>
-              <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '6px' }}>Blood Group</div>
-              <span className="badge badge-indigo">
-                {patientProfile?.bloodGroup || 'Not specified'}
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '6px' }}>Status</div>
+              <span className="badge badge-emerald">
+                Active Patient Account
               </span>
             </div>
           </div>
@@ -146,11 +188,11 @@ const PatientDashboard = () => {
 
         {/* Right Side: Appointment List */}
         <div className="card">
-          <h3 className="card-title">Your Appointments</h3>
+          <h3 className="card-title">Consultations History</h3>
           {myAppointments.length === 0 ? (
             <EmptyState 
               title="No Appointments" 
-              description="You have no scheduled appointments with doctors."
+              description="You have no scheduled consultations on record."
             />
           ) : (
             <div className="table-responsive">
@@ -159,7 +201,7 @@ const PatientDashboard = () => {
                   <tr>
                     <th>Appointment ID</th>
                     <th>Date</th>
-                    <th>Doctor</th>
+                    <th>Assigned Doctor</th>
                     <th>Prescription</th>
                     <th style={{ textAlign: 'right' }}>Action</th>
                   </tr>
@@ -211,7 +253,7 @@ const PatientDashboard = () => {
       <Modal
         isOpen={isDetailOpen}
         onClose={() => setIsDetailOpen(false)}
-        title="Appointment Details"
+        title="Consultation Details"
         size="md"
       >
         {selectedApp && (
@@ -223,15 +265,19 @@ const PatientDashboard = () => {
               </h4>
               <div className="detail-grid">
                 <div className="detail-item">
-                  <span className="detail-label">Name</span>
+                  <span className="detail-label">Physician Name</span>
                   <span className="detail-value">{selectedApp.doctor?.doctorName || 'N/A'}</span>
                 </div>
                 <div className="detail-item">
                   <span className="detail-label">Specialization</span>
-                  <span className="detail-value">{selectedApp.doctor?.specialization || 'N/A'}</span>
+                  <span className="detail-value">{selectedApp.doctor?.specialization || 'General'}</span>
                 </div>
                 <div className="detail-item">
-                  <span className="detail-label">Phone</span>
+                  <span className="detail-label">Department</span>
+                  <span className="detail-value">{selectedApp.doctor?.dept?.deptName || 'Unassigned'}</span>
+                </div>
+                <div className="detail-item">
+                  <span className="detail-label">Contact Phone</span>
                   <span className="detail-value">{selectedApp.doctor?.phone || 'N/A'}</span>
                 </div>
               </div>
@@ -240,7 +286,7 @@ const PatientDashboard = () => {
             {/* Appointment Segment */}
             <div style={{ width: '100%', borderBottom: '1px solid var(--border)', paddingBottom: '16px', marginBottom: '16px' }}>
               <h4 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--primary)', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Calendar size={16} /> Appointment Details
+                <Calendar size={16} /> Appointment Slot
               </h4>
               <div className="detail-grid">
                 <div className="detail-item">
@@ -250,14 +296,6 @@ const PatientDashboard = () => {
                 <div className="detail-item">
                   <span className="detail-label">Scheduled Date</span>
                   <span className="detail-value">{selectedApp.appointmentDate}</span>
-                </div>
-                <div className="detail-item">
-                  <span className="detail-label">Status</span>
-                  <span className="detail-value">{selectedApp.status || 'Scheduled'}</span>
-                </div>
-                <div className="detail-item">
-                  <span className="detail-label">Reason</span>
-                  <span className="detail-value">{selectedApp.reason || 'N/A'}</span>
                 </div>
               </div>
             </div>
@@ -273,20 +311,17 @@ const PatientDashboard = () => {
                     Medicine: {selectedApp.prescription.medicine}
                   </div>
                   <div style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '4px' }}>
-                    Dosage: {selectedApp.prescription.Dosage || selectedApp.prescription.dosage}
-                  </div>
-                  <div style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '4px' }}>
-                    Instructions: {selectedApp.prescription.instructions || 'N/A'}
+                    Dosage / Instructions: {selectedApp.prescription.Dosage || selectedApp.prescription.dosage}
                   </div>
                 </div>
               ) : (
-                <span style={{ color: 'var(--text-muted)', fontSize: '13px' }}>No prescription details available.</span>
+                <span style={{ color: 'var(--text-muted)', fontSize: '13px' }}>No prescription details recorded.</span>
               )}
             </div>
 
             <div className="form-actions" style={{ width: '100%', marginTop: '24px' }}>
               <Button variant="secondary" onClick={() => setIsDetailOpen(false)}>
-                Close
+                Close Window
               </Button>
             </div>
           </div>

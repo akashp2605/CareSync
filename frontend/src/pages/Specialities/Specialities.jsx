@@ -159,9 +159,20 @@ const Specialities = () => {
           <h1 className="page-title">Speciality Management</h1>
           <p className="page-subtitle">Configure clinical specialities and medical qualifications for physicians.</p>
         </div>
-        <Button variant="primary" icon={Plus} onClick={handleOpenAddModal}>
-          Add Speciality
-        </Button>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <Button 
+            variant="secondary" 
+            icon={RefreshCw} 
+            onClick={loadSpecialities} 
+            loading={loading} 
+            title="Refresh specialities"
+          >
+            Refresh
+          </Button>
+          <Button variant="primary" icon={Plus} onClick={handleOpenAddModal}>
+            Add Speciality
+          </Button>
+        </div>
       </div>
 
       {loading ? (

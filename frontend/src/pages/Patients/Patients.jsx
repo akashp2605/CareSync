@@ -206,9 +206,14 @@ const Patients = () => {
           <h1 className="page-title">Patient Management</h1>
           <p className="page-subtitle">Add, edit, view details, and manage hospital patient registrations.</p>
         </div>
-        <Button variant="primary" icon={Plus} onClick={handleOpenAddModal}>
-          Register Patient
-        </Button>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <Button variant="secondary" icon={RefreshCw} onClick={loadPatients} loading={loading} title="Refresh patient records">
+            Refresh
+          </Button>
+          <Button variant="primary" icon={Plus} onClick={handleOpenAddModal}>
+            Register Patient
+          </Button>
+        </div>
       </div>
 
       {loading ? (
@@ -409,7 +414,7 @@ const Patients = () => {
               </div>
               <div>
                 <h4 style={{ fontSize: '18px', fontWeight: 700, margin: 0 }}>{selectedPatient.patientName}</h4>
-                <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Patient Record #{selectedPatient.patientName ? selectedPatient.patientId : ''}</span>
+                <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Patient Record #{selectedPatient.patientId}</span>
               </div>
             </div>
 

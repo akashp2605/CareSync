@@ -256,15 +256,26 @@ const Doctors = () => {
           <h1 className="page-title">Doctor Management</h1>
           <p className="page-subtitle">Add, edit, assign departments, and configure specialities for clinical staff.</p>
         </div>
-        <Button 
-          variant="primary" 
-          icon={Plus} 
-          onClick={handleOpenAddModal}
-          disabled={departments.length === 0}
-          title={departments.length === 0 ? "Create a department first" : ""}
-        >
-          Register Doctor
-        </Button>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <Button 
+            variant="secondary" 
+            icon={RefreshCw} 
+            onClick={loadPageData} 
+            loading={loading} 
+            title="Refresh doctor records"
+          >
+            Refresh
+          </Button>
+          <Button 
+            variant="primary" 
+            icon={Plus} 
+            onClick={handleOpenAddModal}
+            disabled={departments.length === 0}
+            title={departments.length === 0 ? "Create a department first" : ""}
+          >
+            Register Doctor
+          </Button>
+        </div>
       </div>
 
       {loading ? (

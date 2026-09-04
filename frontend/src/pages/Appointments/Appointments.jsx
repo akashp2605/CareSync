@@ -256,15 +256,26 @@ const Appointments = () => {
           <h1 className="page-title">Appointment Management</h1>
           <p className="page-subtitle">Schedule, update, and manage doctor consultations and therapy sessions.</p>
         </div>
-        <Button 
-          variant="primary" 
-          icon={Plus} 
-          onClick={handleOpenAddModal}
-          disabled={isPrerequisitesMissing}
-          title={isPrerequisitesMissing ? "Please populate Patients, Doctors, and Prescriptions first" : ""}
-        >
-          Book Appointment
-        </Button>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <Button 
+            variant="secondary" 
+            icon={RefreshCw} 
+            onClick={loadPageData} 
+            loading={loading} 
+            title="Refresh appointments"
+          >
+            Refresh
+          </Button>
+          <Button 
+            variant="primary" 
+            icon={Plus} 
+            onClick={handleOpenAddModal}
+            disabled={isPrerequisitesMissing}
+            title={isPrerequisitesMissing ? "Please populate Patients, Doctors, and Prescriptions first" : ""}
+          >
+            Book Appointment
+          </Button>
+        </div>
       </div>
 
       {loading ? (

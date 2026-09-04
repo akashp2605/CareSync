@@ -181,9 +181,20 @@ const Departments = () => {
           <h1 className="page-title">Department Management</h1>
           <p className="page-subtitle">Manage hospital departments, wings, and administrative locations.</p>
         </div>
-        <Button variant="primary" icon={Plus} onClick={handleOpenAddModal}>
-          Add Department
-        </Button>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <Button 
+            variant="secondary" 
+            icon={RefreshCw} 
+            onClick={loadDepartments} 
+            loading={loading} 
+            title="Refresh departments"
+          >
+            Refresh
+          </Button>
+          <Button variant="primary" icon={Plus} onClick={handleOpenAddModal}>
+            Add Department
+          </Button>
+        </div>
       </div>
 
       {loading ? (

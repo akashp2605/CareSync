@@ -1,38 +1,41 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShieldCheck, Stethoscope, Users, ChevronRight, CornerRightDown } from 'lucide-react';
+import { ShieldCheck, Stethoscope, Users, ArrowRight } from 'lucide-react';
 import caresyncLogo from '../../assets/caresync.png';
 
 const ROLES = [
   {
     id: 'admin',
     roleKey: 'ADMIN',
-    title: 'Continue as Admin',
-    description: 'Manage hospital operations and users',
+    badge: 'Operations & Management',
+    cardClass: 'role-card-admin',
+    title: 'Admin',
+    description: 'Manage hospital operations, users and system administration',
     icon: ShieldCheck,
     route: '/login/admin',
-    btnClass: 'ref-btn-doctor',
-    iconColor: '#0d9488'
+    actionText: 'Access Admin Portal'
   },
   {
     id: 'doctor',
     roleKey: 'DOCTOR',
-    title: 'Continue as Doctor',
-    description: 'Access patients and manage medical information',
+    badge: 'Clinical Care',
+    cardClass: 'role-card-doctor',
+    title: 'Doctor',
+    description: 'Access patient records, appointments and medical information',
     icon: Stethoscope,
     route: '/login/doctor',
-    btnClass: 'ref-btn-doctor',
-    iconColor: '#0d9488'
+    actionText: 'Access Clinical Portal'
   },
   {
     id: 'patient',
     roleKey: 'PATIENT',
-    title: 'Continue as Patient',
-    description: 'Manage appointments and personal health information',
+    badge: 'Health Records',
+    cardClass: 'role-card-patient',
+    title: 'Patient',
+    description: 'Manage appointments and access personal healthcare information',
     icon: Users,
     route: '/login/patient',
-    btnClass: 'ref-btn-doctor',
-    iconColor: '#0d9488'
+    actionText: 'Access Patient Portal'
   }
 ];
 
@@ -44,63 +47,70 @@ const RoleSelection = () => {
   };
 
   return (
-    <div className="ref-role-page-wrapper">
-      {/* Ambient background glows */}
-      <div className="ref-role-bg-circle-1" />
-      <div className="ref-role-bg-circle-2" />
+    <div className="role-select-page">
+      {/* Background ambient medical glows */}
+      <div className="role-select-ambient-1" />
+      <div className="role-select-ambient-2" />
 
-      <div className="ref-role-container">
-        {/* Left Column: Clean Brand & Heading */}
-        <div className="ref-role-left">
-          <div className="ref-role-logo-badge">
-            <img src={caresyncLogo} alt="CareSync" className="ref-role-logo-img" />
-            <span className="ref-role-logo-name">CareSync</span>
-          </div>
+      <div className="role-select-container">
+        {/* Brand Badge */}
+        <div className="role-select-brand">
+          <img src={caresyncLogo} alt="CareSync" className="role-select-brand-logo" />
+          <span className="role-select-brand-name">CareSync Health</span>
+        </div>
 
-          <h1 className="ref-role-title">Login as</h1>
-
-          <p className="ref-role-description">
-            Select your role to continue.
+        {/* Header */}
+        <div className="role-select-header">
+          <h1 className="role-select-title">Login as</h1>
+          <p className="role-select-subtitle">
+            Choose your portal to continue
           </p>
         </div>
 
-        {/* Right Column: Rounded Card Box with Stacked Buttons (Reference Style) */}
-        <div className="ref-role-right">
-          <div className="ref-role-card-box">
-            {/* Playful curved annotation */}
-            <div className="ref-role-annotation">
-              <CornerRightDown className="ref-role-annotation-arrow" size={18} strokeWidth={2} />
-              <span>Select your role</span>
-            </div>
+        {/* 3-Card Balanced Role Grid */}
+        <div className="role-cards-grid" role="group" aria-label="Portal Selection">
+          {ROLES.map((role) => {
+            const IconComponent = role.icon;
+            return (
+              <div
+                key={role.id}
+                className={`role-card ${role.cardClass}`}
+                onClick={() => handleRoleSelect(role.route)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleRoleSelect(role.route);
+                  }
+                }}
+                tabIndex={0}
+                role="button"
+                aria-label={`Login as ${role.title} - ${role.description}`}
+              >
+                {/* Top accent border line on hover */}
+                <div className="role-card-accent-bar" />
 
-            {/* Stacked 3 Buttons: Blue (Admin), White (Doctor), Black (Patient) */}
-            <div className="ref-buttons-stack" role="group" aria-label="Choose Login Role">
-              {ROLES.map((role) => {
-                const IconComponent = role.icon;
-                return (
-                  <button
-                    key={role.id}
-                    type="button"
-                    className={`ref-btn ${role.btnClass}`}
-                    onClick={() => handleRoleSelect(role.route)}
-                    aria-label={`${role.title} - ${role.description}`}
-                  >
-                    <div className="ref-btn-left-content">
-                      <div className="ref-btn-icon-wrapper">
-                        <IconComponent size={22} color={role.iconColor} strokeWidth={2.4} />
-                      </div>
-                      <div className="ref-btn-texts">
-                        <span className="ref-btn-title">{role.title}</span>
-                        <span className="ref-btn-desc">{role.description}</span>
-                      </div>
-                    </div>
+                {/* Card Icon */}
+                <div className="role-card-icon-wrapper">
+                  <IconComponent size={26} strokeWidth={2.2} />
+                </div>
 
-                    <ChevronRight className="ref-btn-arrow" size={18} strokeWidth={2.4} />
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+                {/* Badge */}
+                <span className="role-card-badge">{role.badge}</span>
+
+                {/* Role Title */}
+                <h2 className="role-card-title">{role.title}</h2>
+
+                {/* Description */}
+                <p className="role-card-desc">{role.description}</p>
+
+                {/* Action footer */}
+                <div className="role-card-action">
+                  <span>{role.actionText}</span>
+                  <ArrowRight className="role-card-arrow" size={16} strokeWidth={2.2} />
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>

@@ -11,17 +11,17 @@ const SplashScreen = ({ onFinish }) => {
   const [fadingOut, setFadingOut] = useState(false);
 
   useEffect(() => {
-    // Hold splash screen for ~1 second (1000ms)
+    // Hold splash screen for 900ms, then start smooth fade-out
     const holdTimer = setTimeout(() => {
       setFadingOut(true);
-    }, 1500);
+    }, 900);
 
-    // After fade-out animation completes (400ms), notify parent to transition
+    // After fade-out completes (400ms), transition at 1300ms (900ms + 400ms)
     const finishTimer = setTimeout(() => {
       if (onFinish) {
         onFinish();
       }
-    }, 1400);
+    }, 1300);
 
     return () => {
       clearTimeout(holdTimer);
